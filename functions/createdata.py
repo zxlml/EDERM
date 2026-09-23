@@ -126,12 +126,12 @@ def CreateData(case,noise_type = 'gaussian'):
         features      = 1
         outliers      = 10
         X    = np.arange(-5, 5, 10/samplestrn)
-        y    = X + 2 * X ** 2 + np.random.normal(0,0.5, samplestrn)  #N(0,1) noise
+        y    = X + 2 * X ** 2 + np.random.normal(0,1, samplestrn)  #N(0,1) noise (paper Sec.5.2)
         l    =  random.sample(range(1,100), outliers)
         y[l]  += np.random.normal(20,1, outliers)
         # y[l]  += np.random.normal(50,10, outliers)
         Xtst = np.arange(-3, 3, 6/samplestst)
-        ytst = Xtst + 2 * Xtst ** 2 + np.random.normal(0,0.5, samplestst) #N(0,1) noise
+        ytst = Xtst + 2 * Xtst ** 2 + np.random.normal(0,1, samplestst) #N(0,1) noise
         y    = y.reshape([y.shape[0], 1])
         ytst = ytst.reshape([ytst.shape[0], 1])
         
@@ -244,3 +244,58 @@ def CreateData(case,noise_type = 'gaussian'):
     return X, y, Xtst, ytst
 
 # CreateData(case=3,noise_type = 'gaussian')
+
+
+def CreateKernelData(func='f1', n_train=100, n_test=100, noise='gaussian',
+                     outlier_ratio=0.0, outlier_scale=100.0, seed=None):
+    """Simulation data of paper Section 4.3 (Table 3, kernel regression).
+
+    func : 'f1' quadratic  2u^2+u   (u in [-5,5],   Gaussian noise N(0,1))
+           'f2' sinc       sin(pi u)/(pi u) (u in [-5,5], noise N(0,0.1))
+           'f3' Friedman#2 (u1[0,100], u2[40pi,560pi], u3[0,1], u4[1,11], noise N(0,1))
+           'f4' Friedman#3 arctan(...)     (same ranges,              noise N(0,1))
+    noise      : 'gaussian' or 'student' (Student-t, df=2)
+    outlier_ratio : |O|/n in {0, 0.1, 0.2}; outlier responses get large
+                   random values added (paper Section 4.3).
+    Returns X_trn, y_trn, X_tst, y_tst (test set: clean, noise only).
+    """
+    rng = np.random.default_rng(seed)
+
+    def _noise(m, scale):
+        if noise == 'gaussian':
+            return rng.normal(0.0, scale, m)
+        return rng.standard_t(2, m) * scale
+
+    if func == 'f1':
+        X_trn = rng.uniform(-5, 5, n_train).reshape(-1, 1)
+        y_trn = 2 * X_trn[:, 0] ** 2 + X_trn[:, 0] + _noise(n_train, 1.0)
+        X_tst = rng.uniform(-5, 5, n_test).reshape(-1, 1)
+        y_tst = 2 * X_tst[:, 0] ** 2 + X_tst[:, 0] + _noise(n_test, 1.0)
+    elif func == 'f2':
+        X_trn = rng.uniform(-5, 5, n_train).reshape(-1, 1)
+        y_trn = np.sinc(X_trn[:, 0] / np.pi) + _noise(n_train, 0.1)
+        X_tst = rng.uniform(-5, 5, n_test).reshape(-1, 1)
+        y_tst = np.sinc(X_tst[:, 0] / np.pi) + _noise(n_test, 0.1)
+    else:  # Friedman functions f3 / f4 (make_friedman2 / make_friedman3)
+        from sklearn.datasets import make_friedman2, make_friedman3
+        maker = make_friedman2 if func == 'f3' else make_friedman3
+        X_trn, y_trn = maker(n_samples=n_train, noise=0.0, random_state=seed)
+        X_tst, y_tst = maker(n_samples=n_test, noise=0.0,
+                             random_state=None if seed is None else seed + 1)
+        y_trn = y_trn + _noise(n_train, 1.0)
+        y_tst = y_tst + _noise(n_test, 1.0)
+
+    # outliers: large random values added to responses of |O| training samples
+    # (magnitudes follow the original repository: f1 +N(20,1), f2 +t_2*10,
+    #  f3/f4 +t_2*1000)
+    m = int(round(outlier_ratio * n_train))
+    if m > 0:
+        idx = rng.choice(n_train, m, replace=False)
+        if func == 'f1':
+            y_trn[idx] += rng.normal(20.0, 1.0, m)
+        elif func == 'f2':
+            y_trn[idx] += rng.standard_t(2, m) * 10.0
+        else:
+            y_trn[idx] += rng.standard_t(2, m) * 1000.0
+
+    return X_trn, y_trn, X_tst, y_tst

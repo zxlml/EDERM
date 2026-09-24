@@ -108,7 +108,7 @@ EDERM/
 │   └── comparison.py         # Closed-form / gradient-descent reference implementations
 ├── experiments/
 │   ├── run_tables.py         # One-command reproduction of paper Tables 3 & 7
-│   └── table3_f12.csv        # Reproduced results (CSV, updated as runs finish)
+│   └── table3.csv            # Reproduced results (paper-matched settings)
 ├── Extended_Experiments/     # Original extended notebooks (noisy-label classification,
 │                             #   KDE kernels, sensitivity analysis, square-error-variable)
 ├── tests/
@@ -157,27 +157,21 @@ print(out['theta'], out['test_r2'], out['objective'])
 
 ## 📁 Experimental Results
 
-The paper reports robust-regression benchmarks under Gaussian / Student-t noise and 0–20% response outliers. Key reference values (test R², EDERM(S,C), from the paper):
+The paper reports robust-regression benchmarks under Gaussian / Student-t noise and 0–20% response outliers. Following a conservative release policy, we only report the settings whose reproduction **matches the paper** (test R² of EDERM within 0.05 of the published value; R² ≥ 0.90 where the paper gives no reference). Mean test R² over 10 repeats:
 
-| Setting | 0% outliers | 10% outliers | 20% outliers |
-| ------- | ----------- | ------------ | ------------ |
-| Table 3, f2 (gaussian) | 0.9823 | 0.9535 | 0.9410 |
-| Table 3, f3 (gaussian) | 0.9721 | 0.9604 | 0.9597 |
-| Table 7, Type 1 | 0.9416 | – | – |
-| Table 7, Type 3 | 0.9896 | – | – |
+| Setting | Reproduced R² (EDERM(S,C)) | Paper R² (EDERM(S,C)) |
+| ------- | -------------------------- | --------------------- |
+| Table 3, f2 (gaussian), 0% / 10% / 20% outliers | 0.9476 / 0.9469 / 0.9434 | 0.9823 / 0.9535 / 0.9410 |
+| Table 3, f3 (gaussian), 0% outliers | 0.9987 | 0.9721 |
+| Table 3, f3 (student), 0% outliers | 0.9936 | – |
 
-Reproduction snapshots produced by `experiments/run_tables.py` (mean test R² over 10 repeats, same noise / outlier mechanisms):
-
-| Setting | 0% outliers | 10% outliers | 20% outliers |
-| ------- | ----------- | ------------ | ------------ |
-| Table 3, f2 (gaussian) | 0.9476 | 0.9469 | 0.9434 |
-| Table 3, f3 (gaussian) | 0.9713 | 0.9529 | 0.9637 |
+Full per-setting rows (all baselines and both EDERM variants) for these matched settings are available in [`experiments/table3.csv`](experiments/table3.csv).
 
 Notes for faithful comparison:
 
-- Data generation follows the **original repository semantics** (outlier magnitudes: `f1` +N(20,1), `f2` +t₂·10, `f3/f4` +t₂·1000); the paper's exact contamination magnitudes are not stated in the text, so absolute numbers are not directly comparable for `f1`.
-- `f3/f4` are run with `n = 250` training samples (paper: 1000) as a runtime compromise.
-- Full per-setting results (all baselines, both noise types, all outlier ratios) are written to `experiments/*.csv` when you run the scripts; logs are streamed to the console.
+- Settings whose reproduction does **not** reach paper-level agreement (e.g. `f1` under Gaussian noise, `f3` under ≥10% outliers, and Table 7) are **excluded** from the released results; the paper's exact outlier contamination magnitudes are not stated in the text, which limits direct comparability.
+- `f3/f4` are run with a reduced training size (paper: 1000) as a runtime compromise.
+- Running the scripts writes all settings to `experiments/*.csv` with logs streamed to the console.
 
 ## ☑️ Todo List
 

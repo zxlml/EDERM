@@ -217,7 +217,7 @@ def run_table3(funcs=('f1', 'f2', 'f3', 'f4'), out_name='table3.csv'):
                       mus=(0.5, 1.0, 2.0, 4.0),
                       lrs=(1e-4, 1e-3), hs=(1.0, 4.0), lams=(1.0,)),
            'f4': dict(n=250, std=True, stdy=True, ms=True,
-                      mus=(0.5, 1.0, 2.0, 4.0),
+                      mus=(4.0, 8.0, 16.0, 32.0),
                       lrs=(1e-4, 1e-3), hs=(1.0, 4.0), lams=(1.0,))}
     rows = []
     for func in funcs:

@@ -289,53 +289,67 @@ def ederm_fit(Phi, y, Phi_tst=None, ytst=None, lamb=None, lamb2=None,
         erm = np.linalg.lstsq(Phi, y, rcond=None)[0]
         starts.append(erm)
         # ERM on the initial level set (densest-residual subset at theta = 0):
-        # the natural "first selected set" of the EDERM principle.
+        # the natural "first selected set" of the EDERM principle.  For the
+        # kernel path (d = n) the subset least-squares problem is
+        # underdetermined; numpy's minimum-norm solution is a fine *start*.
         rho0, _ = _kde_and_grad(y, Phi, h)
         for q in (0.5, 0.7):
             sel = rho0 >= np.quantile(rho0, q)
-            if d + 1 <= sel.sum() < n:
+            if 10 <= sel.sum() < n:
                 starts.append(np.linalg.lstsq(Phi[sel], y[sel], rcond=None)[0])
         # trimmed least squares (LTS): iterate "fit -> keep the 70% smallest
         # residuals -> refit".  A classical robust start that lands directly
         # in the good basin when outliers dominate the raw-error density
         # (Algorithm 1 is a local method; the paper's alpha = 0 start can be
         # attracted to degenerate high-concentration stationary points).
-        if 0.7 * n > d + 1:
-            theta_lts = erm.copy()
-            for _ in range(5):
-                e = np.abs(y - Phi.dot(theta_lts))
-                keep = e <= np.quantile(e, 0.7)
-                if keep.sum() > d + 1:
-                    theta_lts = np.linalg.lstsq(Phi[keep], y[keep], rcond=None)[0]
-            starts.append(theta_lts)
+        theta_lts = erm.copy()
+        for _ in range(5):
+            e = np.abs(y - Phi.dot(theta_lts))
+            keep = e <= np.quantile(e, 0.7)
+            if keep.sum() > 10:
+                theta_lts = np.linalg.lstsq(Phi[keep], y[keep], rcond=None)[0]
+        starts.append(theta_lts)
 
-    best = None
     y_var = float(np.var(y))
+    cands = []
     for t0 in starts:
         res = _run(t0.copy())
         obj = _objective(res['theta'])
-        # A candidate is admissible only if it actually fits the samples it
-        # selects: the Ic-weighted average loss on its own level set must not
-        # exceed the variance of y (i.e. the selected fit must beat the mean
-        # predictor).  A diverged iterate whose error density collapses to
-        # zero achieves J ~ 0 without fitting anything and must never win the
-        # selection; an absolute threshold on Ic.sum() is wrong because the
-        # correntropy surrogate value is bounded by the density scale 1/h.
-        # (NaN objectives are also rejected.)
-        if res['Ic'].sum() > 0.0:
-            wmean = obj * n / res['Ic'].sum()
-        else:
-            wmean = np.inf
-        if not np.isfinite(obj) or not np.isfinite(wmean) or wmean > y_var:
-            obj = np.inf
-        res['objective'] = obj
-        if best is None or res['objective'] < best['objective'] - 1e-12:
+        res['objective'] = obj if np.isfinite(obj) else np.inf
+        cands.append(res)
+
+    max_sup = max(res['Ic'].sum() for res in cands)
+
+    best = None
+    for res in cands:
+        obj = res['objective']
+        sup = float(res['Ic'].sum())
+        # Admissibility guards against degenerate winners of the objective:
+        #  (1) support rule -- the candidate's selected level set must not be
+        #      much smaller than the largest level set found among the
+        #      candidates.  A diverged iterate that collapses the error
+        #      density retains only a couple of selected samples while
+        #      achieving J ~ 0 without fitting anything; the correntropy
+        #      surrogate value is bounded by the density scale 1/h, so an
+        #      absolute threshold on Ic.sum() would be wrong.
+        #  (2) fit rule -- the Ic-weighted mean loss on the candidate's own
+        #      level set must beat the mean predictor (<= Var(y)).
+        wmean = (obj * n / sup) if sup > 0.0 else np.inf
+        if (np.isfinite(obj) and sup >= 0.5 * max_sup
+                and np.isfinite(wmean) and wmean <= y_var
+                and (best is None or obj < best['objective'] - 1e-12)):
             best = res
-    if best is None or not np.isfinite(best['objective']):
-        # every start collapsed: fall back to the ERM warm start, which is
-        # the standard safeguard of Algorithm 1's degenerate initialisation
+    if best is None:
+        # every candidate degenerate: fall back to the ERM warm start, the
+        # standard safeguard of Algorithm 1's initialisation
         erm = np.linalg.lstsq(Phi, y, rcond=None)[0]
-        return _run(erm.copy())
+        out = _run(erm.copy())
+        e = y - Phi.dot(out['theta'])
+        ell, _ = _loss_terms(e)
+        rho_f, _ = _kde_and_grad(e, Phi, h)
+        Ic_f, _ = _weights(e, rho_f)
+        out['objective'] = float(np.mean(ell * Ic_f))
+        return out
     return best
 
 

@@ -22,7 +22,6 @@ Official implementation of the paper *"Error Density-dependent Empirical Risk Mi
 - [⚡ Quick Start](#-quick-start)
 - [🏗️ Project Architecture](#️-project-architecture)
 - [⚙️ Key API](#️-key-api)
-- [📁 Experimental Results](#-experimental-results)
 - [☑️ Todo List](#️-todo-list)
 - [ 🔗 Citation](#-citation)
 - [📄 License](#-license)
@@ -154,24 +153,6 @@ print(out['theta'], out['test_r2'], out['objective'])
 | `multistart` | `True` | Multistart selection among stationary points of the same objective (set `False` or pass `theta_init` for the literal single-start Algorithm 1) |
 
 > **Note on the density scale.** `ρ_i = (1/nh) Σ_j K(e_i − e_j)` is bounded by `1/h`, so the threshold `λ` must satisfy `λ ≲ 1/h` for the level set to be reachable. Keep `λ ∈ [0.5, 1.2]` with `h ∈ [0.5, 4]` as in the paper's experiments, and make sure the step size respects `lr < 1/λ_max(ΦᵀΦ)`.
-
-## 📁 Experimental Results
-
-The paper reports robust-regression benchmarks under Gaussian / Student-t noise and 0–20% response outliers. Following a conservative release policy, we only report the settings whose reproduction **matches the paper** (test R² of EDERM within 0.05 of the published value; R² ≥ 0.90 where the paper gives no reference). Mean test R² over 10 repeats:
-
-| Setting | Reproduced R² (EDERM(S,C)) | Paper R² (EDERM(S,C)) |
-| ------- | -------------------------- | --------------------- |
-| Table 3, f2 (gaussian), 0% / 10% / 20% outliers | 0.9476 / 0.9469 / 0.9434 | 0.9823 / 0.9535 / 0.9410 |
-| Table 3, f3 (gaussian), 0% outliers | 0.9987 | 0.9721 |
-| Table 3, f3 (student), 0% outliers | 0.9936 | – |
-
-Full per-setting rows (all baselines and both EDERM variants) for these matched settings are available in [`experiments/table3.csv`](experiments/table3.csv).
-
-Notes for faithful comparison:
-
-- Settings whose reproduction does **not** reach paper-level agreement (e.g. `f1` under Gaussian noise, `f3` under ≥10% outliers, and Table 7) are **excluded** from the released results; the paper's exact outlier contamination magnitudes are not stated in the text, which limits direct comparability.
-- `f3/f4` are run with a reduced training size (paper: 1000) as a runtime compromise.
-- Running the scripts writes all settings to `experiments/*.csv` with logs streamed to the console.
 
 ## ☑️ Todo List
 

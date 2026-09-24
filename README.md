@@ -1,12 +1,13 @@
 <div align="center">
 
-# EDERM
+# Error Density-dependent Empirical Risk Minimization
 
-**Error Density-dependent Empirical Risk Minimization**
+**EDERM**
 
 [English](README.md) | [简体中文](README_zh.md)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![Paper](https://img.shields.io/badge/Paper-ESWA-blue.svg)](https://www.sciencedirect.com/science/article/abs/pii/S0957417424011989)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 ![Journal](https://img.shields.io/badge/Journal-Expert%20Systems%20With%20Applications-9cf.svg)
 
@@ -166,12 +167,14 @@ print(out['theta'], out['test_r2'], out['objective'])
 If you find this code useful for your research, please cite:
 
 ```bibtex
-@article{chen2025ederm,
-  title   = {Error Density-dependent Empirical Risk Minimization},
-  author  = {Chen, Hong and Zhang, Xuelin and Gong, Tieliang and Gu, Bin and Zheng, Feng},
-  journal = {Expert Systems With Applications},
-  year    = {2025},
-  note    = {Accepted}
+@article{chen2024error,
+  title     = {Error density-dependent empirical risk minimization},
+  author    = {Chen, Hong and Zhang, Xuelin and Gong, Tieliang and Gu, Bin and Zheng, Feng},
+  journal   = {Expert Systems with Applications},
+  volume    = {254},
+  year      = {2024},
+  publisher = {Elsevier},
+  doi       = {10.1016/j.eswa.2024.124332}
 }
 ```
 
